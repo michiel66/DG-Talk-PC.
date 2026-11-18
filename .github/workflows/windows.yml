@@ -35,8 +35,8 @@ jobs:
           $parent = Split-Path -Path $workspace -Parent
           $prefix = '\\?\' 
           Write-Host "Workspace = $workspace"
-          New-Item -ItemType Directory -Force -LiteralPath ($prefix + $parent) | Out-Null
-          New-Item -ItemType Directory -Force -LiteralPath ($prefix + $workspace) | Out-Null
+          [System.IO.Directory]::CreateDirectory($prefix + $parent) | Out-Null
+          [System.IO.Directory]::CreateDirectory($prefix + $workspace) | Out-Null
           cmd /c "dir D:\a /a"
           node -e "let fs=require('fs'); console.log('Node workspace exists',fs.existsSync(process.env.GITHUB_WORKSPACE));"
           if ($LASTEXITCODE -ne 0) { throw "Node workspace check failed" }
