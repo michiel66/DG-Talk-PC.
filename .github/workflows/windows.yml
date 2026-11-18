@@ -98,6 +98,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "Native voice engine test failed" }
           python desktop/test_audio.py
           if ($LASTEXITCODE -ne 0) { throw "Rogerbeep regression tests failed" }
+          python desktop/test_spacers.py
+          if ($LASTEXITCODE -ne 0) { throw "TeamSpeak spacer regression tests failed" }
+          python -c "import sys; sys.path.insert(0,'desktop'); import main; assert callable(main.enable_high_dpi_windows); print('Windows high-DPI UI module: OK')"
+          if ($LASTEXITCODE -ne 0) { throw "Windows 4K DPI-aware UI import failed" }
 
       - name: Build DG-Talk-PC.exe native Windows app
         run: |
