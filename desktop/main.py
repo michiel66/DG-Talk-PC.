@@ -378,20 +378,29 @@ class DGWindow:
         outer.pack(fill="x", side="bottom")
         inner = tk.Frame(outer, bg=p["surface"], padx=8, pady=8)
         inner.pack(fill="x")
-        self.button(inner, "🎙" if not self.backend.config["mic_muted"] else "✕",
-                    self.toggle_mic, color="#7C292B" if self.backend.config["mic_muted"] else p["high"],
-                    size=14).pack(side="left", padx=(0, 5))
-        self.button(inner, "🎧" if not self.backend.config["output_muted"] else "✕",
-                    self.toggle_speaker, color="#7C292B" if self.backend.config["output_muted"] else p["high"],
-                    size=14).pack(side="left", padx=(0, 8))
-        self.ptt_widget = tk.Label(inner, text="●  PUSH TO TALK", bg=p["green"] if self.tx else p["accent"],
-                                   fg="#FFFFFF", font=("Segoe UI", 11, "bold"), cursor="hand2",
-                                   padx=8, pady=15)
+        self.button(
+            inner, "", self.toggle_mic,
+            color="#7C292B" if self.backend.config["mic_muted"] else p["high"],
+            icon="mic_off" if self.backend.config["mic_muted"] else "mic",
+            icon_size=28,
+        ).pack(side="left", padx=(0, 5))
+        self.button(
+            inner, "", self.toggle_speaker,
+            color="#7C292B" if self.backend.config["output_muted"] else p["high"],
+            icon="headphones_off" if self.backend.config["output_muted"] else "headphones",
+            icon_size=28,
+        ).pack(side="left", padx=(0, 8))
+        self.ptt_widget = tk.Label(
+            inner, text=" PUSH TO TALK", image=self._photo("ptt", 22), compound="left",
+            bg=p["green"] if self.tx else p["accent"], fg="#FFFFFF",
+            font=("Segoe UI", 11, "bold"), cursor="hand2", padx=8, pady=15,
+        )
         self.ptt_widget.pack(side="left", fill="x", expand=True, padx=(0, 8))
         self.ptt_widget.bind("<ButtonPress-1>", self.ptt_start)
         self.ptt_widget.bind("<ButtonRelease-1>", self.ptt_release)
         self.ptt_widget.bind("<Leave>", self.ptt_release)
-        self.button(inner, "☎", self.backend.disconnect, color=RED, size=15).pack(side="right")
+        self.button(inner, "", self.backend.disconnect, color=RED,
+                    icon="hangup", icon_size=28).pack(side="right")
 
     def ptt_start(self, event=None):
         self.backend.ptt_down("screen")
