@@ -1,5 +1,5 @@
 #define MyAppName "DG-Talk PC"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "DG-Talk"
 #define MyAppExeName "DG-Talk-PC.exe"
 
@@ -20,16 +20,14 @@ ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
 PrivilegesRequired=lowest
 UninstallDisplayIcon={app}\DG-Talk-PC.exe
+SetupIconFile=..\desktop\assets\DG-Talk-PC.ico
 
 [Files]
 Source: "..\dist\DG-Talk-PC\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{autoprograms}\DG-Talk PC"; Filename: "{app}\DG-Talk-PC.exe"
-Name: "{autodesktop}\DG-Talk PC"; Filename: "{app}\DG-Talk-PC.exe"; Tasks: desktopicon
-
-[Tasks]
-Name: "desktopicon"; Description: "Bureaubladsnelkoppeling maken"; GroupDescription: "Extra snelkoppelingen:"
+Name: "{userprograms}\DG-Talk PC"; Filename: "{app}\DG-Talk-PC.exe"; WorkingDir: "{app}"
+Name: "{userdesktop}\DG-Talk PC"; Filename: "{app}\DG-Talk-PC.exe"; WorkingDir: "{app}"; Comment: "DG-Talk PC - TeamSpeak 3"
 
 [Run]
 Filename: "{app}\DG-Talk-PC.exe"; Description: "DG-Talk PC starten"; Flags: nowait postinstall skipifsilent
