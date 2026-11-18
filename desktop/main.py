@@ -360,7 +360,7 @@ class DGWindow:
                 tree.item(item, text=new_text)
 
     def refresh_tree(self):
-        if self.page == "server" and self.backend.connected and self.tree:
+        if self.page == "server" and self.backend.connected and self.radio_console:
             snap = self.backend.snapshot()
             if snap:
                 signature = (
@@ -370,10 +370,7 @@ class DGWindow:
                     tuple(sorted(self.talkers)),
                 )
                 if self._last_tree != signature:
-                    chosen = self.tree.selection()
-                    self.populate_tree(snap)
-                    if chosen and self.tree.exists(chosen[0]):
-                        self.tree.selection_set(chosen[0])
+                    self.radio_console.update_snapshot(snap)
                     self._last_tree = signature
         self.root.after(1100, self.refresh_tree)
 
@@ -690,6 +687,8 @@ class DGWindow:
                 self._last_tree = None
             elif event == "tx":
                 self.tx = bool(payload)
+                if self.radio_console is not None:
+                    self.radio_console.set_tx(self.tx)
                 if self.ptt_widget:
                     self.ptt_widget.configure(text=" ZENDEN · TX" if self.tx else " PUSH TO TALK",
                                               bg=self.palette["green"] if self.tx else self.palette["accent"])
