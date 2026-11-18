@@ -213,26 +213,55 @@ class DGWindow:
     def server_page(self):
         p = self.palette
         if not self.backend.connected:
-            outer = tk.Frame(self.root, bg=p["bg"])
-            outer.pack(expand=True, fill="both", padx=16, pady=24)
-            self.label(outer, "Server verbinden", 17, True).pack(anchor="w", pady=(5, 13))
-            card = tk.Frame(outer, bg=p["surface"], padx=16, pady=16)
-            card.pack(fill="x")
-            self.label(card, "TeamSpeak-server", 10, color=FAINT).pack(anchor="w")
-            self.server_var = tk.StringVar(value=self.backend.config.get("server", "heerlen.mijnts3.nl"))
-            self.entry(card, self.server_var).pack(fill="x", pady=(4, 14), ipady=8)
-            self.label(card, "Je gebruikersnaam", 10, color=FAINT).pack(anchor="w")
+            # Custom landscape login screen: consistent with the radio console.
+            bg, panel, accent = "#091522", "#101E2E", "#32CBE8"
+            outer = tk.Frame(self.root, bg=bg)
+            outer.pack(expand=True, fill="both", padx=round(26 * self.dpi_scale),
+                       pady=round(25 * self.dpi_scale))
+            hero = tk.Frame(outer, bg=bg)
+            hero.pack(side="left", fill="both", expand=True,
+                      padx=(round(18 * self.dpi_scale), round(26 * self.dpi_scale)))
+            self.label(hero, "WELCOME TO DG-TALK", 12, True,
+                       color=accent, bg=bg).pack(anchor="w", pady=(round(35 * self.dpi_scale), 15))
+            self.label(hero, "DESKTOP\nRADIO CONSOLE", 28, True,
+                       color="#EAF3FA", bg=bg).pack(anchor="w")
+            tk.Frame(hero, bg=accent, width=125, height=3).pack(anchor="w", pady=20)
+            self.label(hero, "TeamSpeak 3 • Live kanalen • Echte audio", 11,
+                       color="#97ACBF", bg=bg).pack(anchor="w")
+            self.label(hero, "Een eigen mobilofoon-interface voor Windows, met\n"
+                       "zichtbare kanaalscheidingen en fysieke PTT.", 10,
+                       color="#97ACBF", bg=bg).pack(anchor="w", pady=(14, 19))
+            tk.Label(hero, image=self._photo("radio", 115), bg=bg).pack(anchor="w", pady=16)
+            self.label(hero, "TS3 DIGITAL  /  48 kHz  /  Opus", 10, True,
+                       color=accent, bg=bg).pack(anchor="w")
+
+            login = tk.Frame(outer, bg=panel, width=round(400 * self.dpi_scale))
+            login.pack(side="right", fill="y")
+            login.pack_propagate(False)
+            card = tk.Frame(login, bg=panel, padx=round(23 * self.dpi_scale),
+                            pady=round(25 * self.dpi_scale))
+            card.pack(fill="both", expand=True)
+            self.label(card, "VERBINDEN", 18, True, color="#EAF3FA",
+                       bg=panel).pack(anchor="w", pady=(6, 2))
+            self.label(card, "Vul je TeamSpeak-gegevens in om online te gaan", 9,
+                       color="#97ACBF", bg=panel).pack(anchor="w", pady=(0, 25))
+            self.label(card, "SERVER", 9, True, color=accent, bg=panel).pack(anchor="w")
+            self.server_var = tk.StringVar(
+                value=self.backend.config.get("server", "heerlen.mijnts3.nl"))
+            self.entry(card, self.server_var).pack(fill="x", pady=(5, 20), ipady=8)
+            self.label(card, "GEBRUIKERSNAAM", 9, True, color=accent, bg=panel).pack(anchor="w")
             self.nick_var = tk.StringVar(value=self.backend.config.get("nickname", ""))
-            self.entry(card, self.nick_var).pack(fill="x", pady=(4, 14), ipady=8)
-            self.label(card, "Serverwachtwoord (indien nodig)", 10, color=FAINT).pack(anchor="w")
+            self.entry(card, self.nick_var).pack(fill="x", pady=(5, 20), ipady=8)
+            self.label(card, "SERVERWACHTWOORD (OPTIONEEL)", 9, True,
+                       color=accent, bg=panel).pack(anchor="w")
             self.pw_var = tk.StringVar()
-            self.entry(card, self.pw_var, show="*").pack(fill="x", pady=(4, 16), ipady=8)
-            self.button(card, " Verbinden met TeamSpeak", self.connect, color=p["accent"], icon="radio",
-                        size=11).pack(fill="x")
-            self.label(outer, "TeamSpeak 3 • eigen Windows audio • 48 kHz • Opus", 9, color=FAINT).pack(anchor="w", pady=15)
-            self.label(outer, "Zelfde kanaalstructuur en radio-bediening als DG-Talk Android.",
-                       9, color=FAINT, wraplength=390).pack(anchor="w")
+            self.entry(card, self.pw_var, show="*").pack(fill="x", pady=(5, 27), ipady=8)
+            self.button(card, " VERBINDEN MET TEAM SPEAK", self.connect,
+                        color="#147E9B", icon="radio", size=11).pack(fill="x", ipady=7)
+            self.label(card, "RX STANDBY    •    WINDOWS 10 / 11", 9, True,
+                       color="#64D6A6", bg=panel).pack(anchor="w", pady=(20, 5))
             return
+
         self.radio_console = RadioConsole(
             self.root, self.backend, p, self._photo,
             on_settings=lambda: self.navigate("settings"),
