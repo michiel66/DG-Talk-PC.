@@ -1,0 +1,131 @@
+name: DG-Talk PC Windows EXE
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/windows.yml'
+      - 'installer/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dg-talk-pc-windows-main
+  cancel-in-progress: true
+
+jobs:
+  windows-x64:
+    name: Native Windows TeamSpeak 3
+    runs-on: windows-2022
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Checkout DG-Talk-PC Windows source
+        uses: actions/checkout@v4
+
+      - name: Checkout original DG-Talk Rust voice engine read-only
+        uses: actions/checkout@v4
+        with:
+          repository: michiel66/DG-Talk
+          ref: df456ef5b6b9a41b74e58758dd7cbe94f9c50e51
+          path: engine
+
+      - name: Python 3.11 x64
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: 'x64'
+
+      - name: Install Rust 1.99
+        run: |
+          rustup toolchain install 1.99.0 --profile minimal
+          if ($LASTEXITCODE -ne 0) { throw "Rust installation failed" }
+          rustup default 1.99.0
+
+      - name: Cache Rust TeamSpeak source
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: engine
+
+      - name: Compile real TS3 Rust Opus engine for Windows
+        working-directory: engine
+        run: |
+          cargo build --release --locked -p tscore
+          if ($LASTEXITCODE -ne 0) { throw "Windows TeamSpeak voice compilation failed" }
+          if (-not (Test-Path "target/release/tscore.dll")) { throw "tscore.dll not found" }
+
+      - name: Generate Windows UniFFI Python bindings
+        working-directory: engine
+        run: |
+          New-Item -ItemType Directory -Force ../desktop/bindings | Out-Null
+          cargo run --release --locked -p uniffi-bindgen -- generate --library target/release/tscore.dll --language python --out-dir ../desktop/bindings
+          if ($LASTEXITCODE -ne 0) { throw "UniFFI Python binding generation failed" }
+          Copy-Item target/release/tscore.dll ../desktop/bindings/tscore.dll
+          if (-not (Test-Path "../desktop/bindings/tscore.py")) { throw "Missing tscore.py" }
+
+      - name: Install native Windows GUI and audio packages
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r desktop/requirements.txt
+          if ($LASTEXITCODE -ne 0) { throw "Windows Python dependencies failed" }
+
+      - name: Copy original Android themes into Windows UI
+        run: |
+          New-Item -ItemType Directory -Force desktop/assets | Out-Null
+          Copy-Item engine/android/app/src/main/res/drawable-nodpi/dg_theme_*_preview.jpg desktop/assets/
+          if ((Get-ChildItem desktop/assets/dg_theme_*_preview.jpg).Count -ne 4) { throw "Missing original DG-Talk theme preview images" }
+
+      - name: Test Windows native voice core and Rogerbeep
+        run: |
+          python -m compileall -q desktop
+          if ($LASTEXITCODE -ne 0) { throw "Python syntax error" }
+          $env:PYTHONPATH = (Resolve-Path desktop/bindings).Path
+          python -c "import tscore; x=tscore.create_identity(); assert len(x)>10; print('Real Rust TeamSpeak core / UniFFI: OK')"
+          if ($LASTEXITCODE -ne 0) { throw "Native voice engine test failed" }
+          python desktop/test_audio.py
+          if ($LASTEXITCODE -ne 0) { throw "Rogerbeep regression tests failed" }
+
+      - name: Build DG-Talk-PC.exe native Windows app
+        run: |
+          python -m PyInstaller --noconfirm --clean --windowed --onedir --name DG-Talk-PC --paths desktop --paths desktop/bindings --hidden-import pynput.keyboard._win32 --collect-all sounddevice --add-binary "desktop/bindings/tscore.dll;." --add-data "desktop/assets;assets" desktop/main.py
+          if ($LASTEXITCODE -ne 0) { throw "DG-Talk PC EXE packaging failed" }
+          if (-not (Test-Path "dist/DG-Talk-PC/DG-Talk-PC.exe")) { throw "Windows EXE missing" }
+          Copy-Item engine/LICENSE dist/DG-Talk-PC/LICENSE-DG-TALK.txt
+          Copy-Item engine/THIRD_PARTY.md dist/DG-Talk-PC/THIRD_PARTY.md
+          Copy-Item -Recurse engine/docs/licenses dist/DG-Talk-PC/licenses
+          Copy-Item README.md dist/DG-Talk-PC/README.txt
+
+      - name: Upload portable DG-Talk PC Windows x64 EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: DG-Talk-PC-Windows-x64
+          path: dist/DG-Talk-PC/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create optional Windows setup EXE (Inno Setup)
+        continue-on-error: true
+        run: |
+          $compiler = "C:/Program Files (x86)/Inno Setup 6/ISCC.exe"
+          if (-not (Test-Path $compiler)) {
+            choco install innosetup --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { throw "Inno Setup installation failed" }
+          }
+          if (-not (Test-Path $compiler)) { throw "Inno Setup missing" }
+          & $compiler installer/DG-Talk-PC.iss
+          if ($LASTEXITCODE -ne 0) { throw "Windows Setup compilation failed" }
+
+      - name: Upload DG-Talk PC Windows installer
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DG-Talk-PC-Setup-Windows-x64
+          path: installer/output/DG-Talk-PC-Setup.exe
+          if-no-files-found: warn
+          retention-days: 30
