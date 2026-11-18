@@ -8,12 +8,14 @@ from __future__ import annotations
 import queue
 import sys
 import tkinter as tk
+import tkinter.font as tkfont
 from pathlib import Path
 from tkinter import ttk, messagebox, simpledialog
 from tkinter.scrolledtext import ScrolledText
 
 from backend import Backend, THEMES
 from color_icons import draw_icon
+from spacers import parse_spacer, spacer_display
 
 try:
     from PIL import Image, ImageTk
@@ -39,13 +41,49 @@ TREE_ICONS = {
 }
 
 
+def enable_high_dpi_windows():
+    """Ask Windows to paint Tk controls at native monitor resolution.
+
+    With no DPI declaration Windows bitmap-upscales the entire 525px window,
+    making colour icons and text appear fuzzy on 1440p/4K monitors.
+    """
+    if sys.platform != "win32":
+        return
+    import ctypes
+    try:
+        # Windows 10+: per-monitor v2 DPI awareness; -4 = DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2.
+        if ctypes.windll.user32.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4)):
+            return
+    except (AttributeError, OSError, ValueError):
+        pass
+    try:
+        # Windows 8.1 fallback.
+        ctypes.windll.shcore.SetProcessDpiAwareness(2)
+    except (AttributeError, OSError, ValueError):
+        try:
+            ctypes.windll.user32.SetProcessDPIAware()
+        except (AttributeError, OSError, ValueError):
+            pass
+
+
 class DGWindow:
     def __init__(self):
         self.backend = Backend()
         self.root = tk.Tk()
         self.root.title("DG-Talk PC")
-        self.root.geometry("525x860")
-        self.root.minsize(405, 640)
+        # Sizes are screen pixels: DPI aware on Windows, so scale the window and
+        # bitmaps explicitly to preserve their apparent size without blur.
+        self.dpi_scale = max(1.0, min(3.0, float(self.root.winfo_fpixels("1i")) / 96.0))
+        max_width = max(360, self.root.winfo_screenwidth() - int(70 * self.dpi_scale))
+        max_height = max(540, self.root.winfo_screenheight() - int(115 * self.dpi_scale))
+        width = min(round(525 * self.dpi_scale), max_width)
+        height = min(round(860 * self.dpi_scale), max_height)
+        self.root.geometry(f"{width}x{height}")
+        self.root.minsize(min(round(405 * self.dpi_scale), max_width),
+                          min(round(640 * self.dpi_scale), max_height))
+        self._spacer_font = tkfont.Font(master=self.root, family="Segoe UI", size=10, weight="bold")
+        self._spacer_items = {}
+        self._spacer_refresh_job = None
         self.root.configure(bg=PAL["standard"]["bg"])
         self._icons = {}  # Keep native RGBA PhotoImage references alive
         self.root.iconphoto(True, self._photo("app", 64))
@@ -82,7 +120,7 @@ class DGWindow:
         style = ttk.Style(self.root)
         style.theme_use("clam")
         style.configure("DG.Treeview", background=p["bg"], foreground=TEXT, fieldbackground=p["bg"],
-                        borderwidth=0, relief="flat", rowheight=29, font=("Segoe UI", 10))
+                        borderwidth=0, relief="flat", rowheight=round(30 * self.dpi_scale), font=("Segoe UI", 10))
         style.map("DG.Treeview", foreground=[("selected", "#FFFFFF")],
                   background=[("selected", p["soft"])])
         style.configure("DG.Vertical.TScrollbar", background=p["high"], troughcolor=p["bg"],
@@ -92,10 +130,11 @@ class DGWindow:
 
     def _photo(self, name, size=22):
         # Real RGBA pixel art. Tk/Windows often turns emoji into white glyphs.
-        key = (name, size, self.backend.config.get("theme", "standard"))
+        pixel_size = round(size * self.dpi_scale)
+        key = (name, pixel_size, self.backend.config.get("theme", "standard"))
         if key not in self._icons:
             colour = PAL.get(self.backend.config.get("theme"), PAL["standard"])["accent"]
-            self._icons[key] = ImageTk.PhotoImage(draw_icon(name, size, colour), master=self.root)
+            self._icons[key] = ImageTk.PhotoImage(draw_icon(name, pixel_size, colour), master=self.root)
         return self._icons[key]
 
     def label(self, parent, text, size=10, bold=False, color=None, bg=None, **kw):
@@ -117,6 +156,10 @@ class DGWindow:
             child.destroy()
         self.ptt_widget = None
         self.tree = None
+        self._spacer_items = {}
+        if self._spacer_refresh_job is not None:
+            self.root.after_cancel(self._spacer_refresh_job)
+            self._spacer_refresh_job = None
         self.root.configure(bg=self.palette["bg"])
 
     def render(self):
@@ -614,4 +657,5 @@ class DGWindow:
 
 
 if __name__ == "__main__":
+    enable_high_dpi_windows()
     DGWindow()
