@@ -76,6 +76,13 @@ jobs:
           python -m pip install -r desktop/requirements.txt
           if ($LASTEXITCODE -ne 0) { throw "Windows Python dependencies failed" }
 
+      - name: Draw and validate full-colour icons and Windows application ICO
+        run: |
+          python desktop/color_icons.py --test --write desktop/assets/DG-Talk-PC.ico
+          if ($LASTEXITCODE -ne 0) { throw "Coloured DG-Talk icons failed" }
+          python -c "from PIL import Image; im=Image.open('desktop/assets/DG-Talk-PC.ico'); assert (256,256) in im.ico.sizes(); assert (32,32) in im.ico.sizes(); print('Coloured Windows ICO: OK')"
+          if ($LASTEXITCODE -ne 0) { throw "The Windows application icon is missing or incomplete" }
+
       - name: Copy original Android themes into Windows UI
         run: |
           New-Item -ItemType Directory -Force desktop/assets | Out-Null
@@ -94,9 +101,10 @@ jobs:
 
       - name: Build DG-Talk-PC.exe native Windows app
         run: |
-          python -m PyInstaller --noconfirm --clean --windowed --onedir --name DG-Talk-PC --paths desktop --paths desktop/bindings --hidden-import pynput.keyboard._win32 --collect-all sounddevice --add-binary "desktop/bindings/tscore.dll;." --add-data "desktop/assets;assets" desktop/main.py
+          python -m PyInstaller --noconfirm --clean --windowed --onedir --name DG-Talk-PC --icon "desktop/assets/DG-Talk-PC.ico" --paths desktop --paths desktop/bindings --hidden-import pynput.keyboard._win32 --collect-all sounddevice --add-binary "desktop/bindings/tscore.dll;." --add-data "desktop/assets;assets" desktop/main.py
           if ($LASTEXITCODE -ne 0) { throw "DG-Talk PC EXE packaging failed" }
           if (-not (Test-Path "dist/DG-Talk-PC/DG-Talk-PC.exe")) { throw "Windows EXE missing" }
+          if (-not (Test-Path "dist/DG-Talk-PC/_internal/assets/DG-Talk-PC.ico")) { throw "Coloured app icon is missing from portable bundle" }
           Copy-Item engine/LICENSE dist/DG-Talk-PC/LICENSE-DG-TALK.txt
           Copy-Item engine/THIRD_PARTY.md dist/DG-Talk-PC/THIRD_PARTY.md
           Copy-Item -Recurse engine/docs/licenses dist/DG-Talk-PC/licenses
@@ -121,6 +129,14 @@ jobs:
           if (-not (Test-Path $compiler)) { throw "Inno Setup missing" }
           & $compiler 'C:\DG-BUILD\installer\DG-Talk-PC.iss'
           if ($LASTEXITCODE -ne 0) { throw "Windows Setup compilation failed" }
+          if (-not (Test-Path 'installer/output/DG-Talk-PC-Setup.exe')) { throw "Installer EXE missing" }
+          $script = Get-Content 'installer/DG-Talk-PC.iss' -Raw
+          if ($script -notmatch [regex]::Escape('Name: "{userdesktop}\DG-Talk PC"')) {
+            throw "Mandatory desktop shortcut was not configured"
+          }
+          if ($script -match '(?i)Tasks:\s*desktopicon') {
+            throw "Desktop shortcut is still optional"
+          }
 
       - name: Upload DG-Talk PC Windows installer
         if: always()
