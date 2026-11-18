@@ -4,6 +4,21 @@
 
 > **Status:** eerste native Windows-port. De interface volgt de Android-indeling en bevat thema's en PTT. Dit is **geen pixel-perfecte of functie-voor-functie kopie**: Android-eigen functies en bepaalde apparaatknoppen vragen afzonderlijke Windows-implementaties en praktijktests.
 
+## DG-Talk PC 1.1.0 – eigen Windows Radio Console
+
+Omdat de Android-achtige Windows-boom niet goed werkte op verschillende schermen, is de **verbonden hoofdinterface compleet vervangen** door een eigen, brede Windows-mobilofoon. De *werkende* TeamSpeak 3/Rust/Opus-engine, Windows-microfoon, audio, PTT, rogerpiep, fysieke PTT en verbindingsinstellingen zijn **niet herschreven**.
+
+- **Nieuwe desktopindeling**: een donkere radio-console met statusbalk, grote scrollbare kanalenlijst en een vast rechter paneel met de actuele kanaalnaam, gebruikersnaam, RX-/TX-status, signaalbalken, grote zendknop en audio-bediening.
+- **Geen Treeview of witte Unicode-iconen** meer in de hoofdweergave: alle kanalen en gebruikers worden met scherpe lettertypen en echte gekleurde afbeeldingen op een **native Tk Canvas** getekend.
+- **Echte spacers als lijnen**: `[*spacer619]──` is een geometrische scheidingslijn, niet een technisch label of herhaalde tekens. `[cspacer]`, `[lspacer]`, `[rspacer]` worden als uitgelijnde tekst getekend. Lijnen passen zichzelf aan na het vergroten of verkleinen van het scherm.
+- **Interactief**: dubbelklik om een gewoon kanaal te betreden, rechtsklik voor de kanaalactie, dubbelklik op een gebruiker voor een privégesprek, inklappen van subkanalen en zoeken op kanaal of gebruikersnaam.
+- **DPI-/4K-geschikt**: fonts en vormen worden direct op de huidige Windows-resolutie getekend in plaats van als bitmap opgerekt. De vier thema's Standaard, Kerst, 27MC en Space behouden elk hun accentkleur.
+- **Eigen verbindingsscherm**, passend bij deze radio-console. De bestaande instellingen blijven beschikbaar.
+
+De nieuwe GUI heeft een **aparte Windows-regressietest**: hiermee worden de getekende TeamSpeak-lijnen, labels, TX/RX, schermgrootte, PTT-gebeurtenissen en kanaalacties gecontroleerd zonder dat de live server hoeft te worden belast. Daarnaast blijft de volledige Windows-EXE/Setup-build bestaan.
+
+**Installeren:** kies op de nieuwste geslaagde [Windows build](https://github.com/michiel66/DG-Talk-PC./actions/workflows/windows.yml) onder **Artifacts** `DG-Talk-PC-Setup-Windows-x64`. Installeer over de bestaande versie; de setup maakt opnieuw het bureaubladicoon en bewaart de gebruikersinstellingen.
+
 ## DG-Talk PC 1.0.2 – zichtbare spacerlijnen en scherpe 4K/HiDPI-weergave
 
 Op verzoek van gebruikers van TS-HEERLEN:
