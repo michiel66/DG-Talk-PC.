@@ -24,32 +24,23 @@ jobs:
     defaults:
       run:
         shell: pwsh
+        working-directory: 'C:\DG-BUILD'
 
     steps:
-      # GitHub permits a trailing dot in the repository name, but the Windows runner
-      # sometimes fails to create the corresponding working directory by default.
-      - name: Prepare literal trailing-dot Windows workspace for Node and Git
+      # actions/checkout is broken on Windows for repo names ending in a dot.
+      # Clone to a normal Windows folder rather than the broken GITHUB_WORKSPACE.
+      - name: Clone DG-Talk PC and original Android voice engine without checkout
         working-directory: 'C:\Windows\Temp'
         run: |
-          $workspace = $env:GITHUB_WORKSPACE
-          $parent = Split-Path -Path $workspace -Parent
-          $prefix = '\\?\' 
-          Write-Host "Workspace = $workspace"
-          [System.IO.Directory]::CreateDirectory($prefix + $parent) | Out-Null
-          [System.IO.Directory]::CreateDirectory($prefix + $workspace) | Out-Null
-          cmd /c "dir D:\a /a"
-          node -e "let fs=require('fs'); console.log('Node workspace exists',fs.existsSync(process.env.GITHUB_WORKSPACE));"
-          if ($LASTEXITCODE -ne 0) { throw "Node workspace check failed" }
-
-      - name: Checkout DG-Talk-PC Windows source
-        uses: actions/checkout@v4
-
-      - name: Checkout original DG-Talk Rust voice engine read-only
-        uses: actions/checkout@v4
-        with:
-          repository: michiel66/DG-Talk
-          ref: df456ef5b6b9a41b74e58758dd7cbe94f9c50e51
-          path: engine
+          New-Item -ItemType Directory -Force -Path 'C:\DG-BUILD' | Out-Null
+          git clone --depth 1 https://github.com/michiel66/DG-Talk-PC..git 'C:\DG-BUILD'
+          if ($LASTEXITCODE -ne 0) { throw "Could not clone DG-Talk-PC." }
+          git clone --depth 1 https://github.com/michiel66/DG-Talk.git 'C:\DG-BUILD\engine'
+          if ($LASTEXITCODE -ne 0) { throw "Could not clone original DG-Talk" }
+          git -C 'C:\DG-BUILD\engine' fetch --depth 1 origin df456ef5b6b9a41b74e58758dd7cbe94f9c50e51
+          if ($LASTEXITCODE -ne 0) { throw "Could not fetch pinned TS3 engine" }
+          git -C 'C:\DG-BUILD\engine' checkout --detach df456ef5b6b9a41b74e58758dd7cbe94f9c50e51
+          if ($LASTEXITCODE -ne 0) { throw "Could not checkout pinned TS3 engine" }
 
       - name: Python 3.11 x64
         uses: actions/setup-python@v5
@@ -63,20 +54,15 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "Rust installation failed" }
           rustup default 1.99.0
 
-      - name: Cache Rust TeamSpeak source
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: engine
-
       - name: Compile real TS3 Rust Opus engine for Windows
-        working-directory: engine
+        working-directory: 'C:\DG-BUILD\engine'
         run: |
           cargo build --release --locked -p tscore
           if ($LASTEXITCODE -ne 0) { throw "Windows TeamSpeak voice compilation failed" }
           if (-not (Test-Path "target/release/tscore.dll")) { throw "tscore.dll not found" }
 
       - name: Generate Windows UniFFI Python bindings
-        working-directory: engine
+        working-directory: 'C:\DG-BUILD\engine'
         run: |
           New-Item -ItemType Directory -Force ../desktop/bindings | Out-Null
           cargo run --release --locked -p uniffi-bindgen -- generate --library target/release/tscore.dll --language python --out-dir ../desktop/bindings
@@ -94,7 +80,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force desktop/assets | Out-Null
           Copy-Item engine/android/app/src/main/res/drawable-nodpi/dg_theme_*_preview.jpg desktop/assets/
-          if ((Get-ChildItem desktop/assets/dg_theme_*_preview.jpg).Count -ne 4) { throw "Missing original DG-Talk theme preview images" }
+          if ((Get-ChildItem desktop/assets/dg_theme_*_preview.jpg).Count -ne 4) { throw "Missing Android theme pictures" }
 
       - name: Test Windows native voice core and Rogerbeep
         run: |
@@ -120,7 +106,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: DG-Talk-PC-Windows-x64
-          path: dist/DG-Talk-PC/
+          path: 'C:\DG-BUILD\dist\DG-Talk-PC\'
           if-no-files-found: error
           retention-days: 30
 
@@ -133,7 +119,7 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "Inno Setup installation failed" }
           }
           if (-not (Test-Path $compiler)) { throw "Inno Setup missing" }
-          & $compiler installer/DG-Talk-PC.iss
+          & $compiler 'C:\DG-BUILD\installer\DG-Talk-PC.iss'
           if ($LASTEXITCODE -ne 0) { throw "Windows Setup compilation failed" }
 
       - name: Upload DG-Talk PC Windows installer
@@ -141,6 +127,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: DG-Talk-PC-Setup-Windows-x64
-          path: installer/output/DG-Talk-PC-Setup.exe
+          path: 'C:\DG-BUILD\installer\output\DG-Talk-PC-Setup.exe'
           if-no-files-found: warn
           retention-days: 30
