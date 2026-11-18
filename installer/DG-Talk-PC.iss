@@ -1,5 +1,5 @@
 #define MyAppName "DG-Talk PC"
-#define MyAppVersion "1.0.1"
+#define MyAppVersion "1.0.2"
 #define MyAppPublisher "DG-Talk"
 #define MyAppExeName "DG-Talk-PC.exe"
 
