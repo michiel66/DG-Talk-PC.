@@ -26,6 +26,17 @@ jobs:
         shell: pwsh
 
     steps:
+      # GitHub permits a trailing dot in the repository name, but the Windows runner
+      # sometimes fails to create the corresponding working directory by default.
+      - name: Prepare Windows workspace for repository name ending in a dot
+        working-directory: 'C:\Windows\Temp'
+        run: |
+          Write-Host "Runner workspace: $env:GITHUB_WORKSPACE"
+          New-Item -ItemType Directory -Path $env:GITHUB_WORKSPACE -Force | Out-Null
+          if (-not (Test-Path $env:GITHUB_WORKSPACE)) {
+            throw "Cannot create Windows working directory for trailing-dot repository name"
+          }
+
       - name: Checkout DG-Talk-PC Windows source
         uses: actions/checkout@v4
 
