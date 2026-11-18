@@ -16,6 +16,7 @@ from tkinter.scrolledtext import ScrolledText
 from backend import Backend, THEMES
 from color_icons import draw_icon
 from spacers import parse_spacer, spacer_display
+from radio_console import RadioConsole
 
 try:
     from PIL import Image, ImageTk
@@ -76,11 +77,12 @@ class DGWindow:
         self.dpi_scale = max(1.0, min(3.0, float(self.root.winfo_fpixels("1i")) / 96.0))
         max_width = max(360, self.root.winfo_screenwidth() - int(70 * self.dpi_scale))
         max_height = max(540, self.root.winfo_screenheight() - int(115 * self.dpi_scale))
-        width = min(round(525 * self.dpi_scale), max_width)
-        height = min(round(860 * self.dpi_scale), max_height)
+        # A desktop radio console, instead of a tall phone-like window.
+        width = min(round(1120 * self.dpi_scale), max_width)
+        height = min(round(800 * self.dpi_scale), max_height)
         self.root.geometry(f"{width}x{height}")
-        self.root.minsize(min(round(405 * self.dpi_scale), max_width),
-                          min(round(640 * self.dpi_scale), max_height))
+        self.root.minsize(min(round(730 * self.dpi_scale), max_width),
+                          min(round(620 * self.dpi_scale), max_height))
         self._spacer_font = tkfont.Font(master=self.root, family="Segoe UI", size=10, weight="bold")
         self._spacer_items = {}
         self._spacer_refresh_job = None
@@ -97,6 +99,7 @@ class DGWindow:
         self.page = "server"
         self.palette = PAL.get(self.backend.config.get("theme"), PAL["standard"])
         self.tree = None
+        self.radio_console = None
         self.tx = False
         self.ptt_widget = None
         self.status_string = "Offline"
@@ -156,6 +159,7 @@ class DGWindow:
             child.destroy()
         self.ptt_widget = None
         self.tree = None
+        self.radio_console = None
         self._spacer_items = {}
         if self._spacer_refresh_job is not None:
             self.root.after_cancel(self._spacer_refresh_job)
@@ -166,6 +170,10 @@ class DGWindow:
         self.palette = PAL.get(self.backend.config.get("theme"), PAL["standard"])
         self._setup_styles()
         self.clear()
+        if self.page == "server" and self.backend.connected:
+            # The custom desktop console has its own header and TX controls.
+            self.server_page()
+            return
         self.header()
         if self.page == "settings":
             self.settings_page()
