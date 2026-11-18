@@ -232,7 +232,7 @@ class Backend:
                 self.status = "DISCONNECTED"
                 self.stop_audio()
                 self.events.put(("error", "Verbinding mislukt: " + str(exc)))
-                self.events.put(("status", ("DISCONNECTED", str(exc)))
+                self.events.put(("status", ("DISCONNECTED", str(exc))))
         threading.Thread(target=job, daemon=True, name="dg-connect").start()
 
     def disconnect(self):
