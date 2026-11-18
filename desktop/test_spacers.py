@@ -51,7 +51,6 @@ class TestTeamSpeakSpacers(unittest.TestCase):
         self.assertEqual(spacer_display(parse_spacer("[cspacer3]"), 300, measure), "")
         self.assertIsNone(parse_spacer("CONTROL ROOM"))
         self.assertIsNone(parse_spacer("[notspacer]Kanaal"))
-        self.assertIsNone(parse_spacer("[cspacer]broken]suffix") if False else None
 
     def test_width_tracks_resize(self):
         spacer = parse_spacer("[*spacer619]──")
