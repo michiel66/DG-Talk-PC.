@@ -17,6 +17,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  gui-smoke:
+    name: Radio Console visual regression
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - name: Clone Windows GUI into safe folder
+        shell: pwsh
+        working-directory: 'C:\Windows\Temp'
+        run: |
+          git clone --depth 1 https://github.com/michiel66/DG-Talk-PC..git 'C:\DG-GUI'
+          if ($LASTEXITCODE -ne 0) { throw "Could not checkout radio console" }
+      - name: Install Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: x64
+      - name: Test real Tk Canvas widgets, spacer lines and PTT events
+        shell: pwsh
+        working-directory: 'C:\DG-GUI'
+        run: |
+          python -m pip install "Pillow>=11,<13"
+          if ($LASTEXITCODE -ne 0) { throw "Pillow install error" }
+          python -m compileall -q desktop
+          if ($LASTEXITCODE -ne 0) { throw "Python syntax error" }
+          python desktop/test_spacers.py
+          if ($LASTEXITCODE -ne 0) { throw "TS3 separator tests failed" }
+          python desktop/test_console.py
+          if ($LASTEXITCODE -ne 0) { throw "Custom Radio Console visual regression failed" }
+
   windows-x64:
     name: Native Windows TeamSpeak 3
     runs-on: windows-2022
