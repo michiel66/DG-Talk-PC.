@@ -138,7 +138,7 @@ class DGWindow:
         header = tk.Frame(self.root, bg=p["bg"], height=82)
         header.pack(fill="x")
         header.pack_propagate(False)
-        logo = self.label(header, "📻", 24, color=p["accent"])
+        logo = tk.Label(header, image=self._photo("radio", 46), bg=p["bg"])
         logo.pack(side="left", padx=(15, 10))
         middle = tk.Frame(header, bg=p["bg"])
         middle.pack(side="left", fill="both", expand=True)
@@ -146,11 +146,11 @@ class DGWindow:
         detail = self.status_string
         self.label(middle, detail, 9, color=p["green"] if self.backend.connected else FAINT).pack(anchor="w")
         if self.page == "settings":
-            self.button(header, "←", lambda: self.navigate("server"), size=13).pack(side="right", padx=10)
+            self.button(header, "", lambda: self.navigate("server"), icon="back", size=13).pack(side="right", padx=10)
         else:
-            self.button(header, "⚙", lambda: self.navigate("settings"), size=13).pack(side="right", padx=(3, 12))
+            self.button(header, "", lambda: self.navigate("settings"), icon="settings", size=13).pack(side="right", padx=(3, 12))
             if self.backend.connected:
-                self.button(header, "☰", lambda: self.navigate("chat"), size=12).pack(side="right", padx=3)
+                self.button(header, "", lambda: self.navigate("chat"), icon="chat", size=12).pack(side="right", padx=3)
         tk.Frame(self.root, height=1, bg=p["border"]).pack(fill="x")
 
     def navigate(self, page):
@@ -176,7 +176,7 @@ class DGWindow:
             self.label(card, "Serverwachtwoord (indien nodig)", 10, color=FAINT).pack(anchor="w")
             self.pw_var = tk.StringVar()
             self.entry(card, self.pw_var, show="*").pack(fill="x", pady=(4, 16), ipady=8)
-            self.button(card, "📻  Verbinden met TeamSpeak", self.connect, color=p["accent"],
+            self.button(card, " Verbinden met TeamSpeak", self.connect, color=p["accent"], icon="radio",
                         size=11).pack(fill="x")
             self.label(outer, "TeamSpeak 3 • eigen Windows audio • 48 kHz • Opus", 9, color=FAINT).pack(anchor="w", pady=15)
             self.label(outer, "Zelfde kanaalstructuur en radio-bediening als DG-Talk Android.",
@@ -314,7 +314,7 @@ class DGWindow:
         p = self.palette
         box = tk.Frame(self.root, bg=p["bg"])
         box.pack(fill="both", expand=True, padx=14, pady=10)
-        self.button(box, "← Kanalen", lambda: self.navigate("server")).pack(anchor="w", pady=(0, 10))
+        self.button(box, " Kanalen", lambda: self.navigate("server"), icon="back").pack(anchor="w", pady=(0, 10))
         tabs = tk.Frame(box, bg=p["bg"])
         tabs.pack(fill="x", pady=(0, 8))
         for target, name in (("channel", "Kanaal"), ("server", "Server"), ("private", "Privé")):
@@ -422,10 +422,10 @@ class DGWindow:
                    wraplength=350).pack(anchor="w", pady=(0, 8))
         browser = tk.Frame(box, bg=p["surface"])
         browser.pack(fill="x")
-        self.button(browser, "❮", lambda: self.change_preview(-1), size=14).pack(side="left")
+        self.button(browser, "", lambda: self.change_preview(-1), size=14, icon="left").pack(side="left")
         self.preview_container = tk.Frame(browser, bg=p["surface"])
         self.preview_container.pack(side="left", fill="both", expand=True, padx=6)
-        self.button(browser, "❯", lambda: self.change_preview(1), size=14).pack(side="right")
+        self.button(browser, "", lambda: self.change_preview(1), size=14, icon="right").pack(side="right")
         self.paint_preview()
         self.button(box, "Thema toepassen", self.apply_preview, color=p["accent"]).pack(fill="x", pady=(9, 0))
         self.label(box, "Het huidige Android-achtige scherm blijft qua bediening gelijk.",
@@ -448,7 +448,7 @@ class DGWindow:
                    lambda: self.backend.setting("roger", self.roger_var.get()))
         self.label(box, "Meegestuurd bij loslaten van PTT: hoorbaar voor anderen in het kanaal.",
                    9, color=FAINT, wraplength=360).pack(anchor="w", pady=(7, 9))
-        self.button(box, "▶ Test 3-tonige piep in kanaal", self.test_roger).pack(fill="x")
+        self.button(box, " Test 3-tonige piep in kanaal", self.test_roger, icon="test").pack(fill="x")
 
         box = self.card(content, "Spraakmodus")
         self.voice_var = tk.StringVar(value=self.backend.config["voice_mode"])
@@ -564,7 +564,7 @@ class DGWindow:
             elif event == "tx":
                 self.tx = bool(payload)
                 if self.ptt_widget:
-                    self.ptt_widget.configure(text="●  ZENDEN · TX" if self.tx else "●  PUSH TO TALK",
+                    self.ptt_widget.configure(text=" ZENDEN · TX" if self.tx else " PUSH TO TALK",
                                               bg=self.palette["green"] if self.tx else self.palette["accent"])
             elif event == "chat":
                 target, sender, msg, sender_id = payload
