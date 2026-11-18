@@ -361,6 +361,9 @@ class DGWindow:
         if not chosen:
             return
         item = chosen[0]
+        if item in self._spacer_items:
+            # Decorative TeamSpeak spacer channels are not joinable.
+            return
         if item.startswith("c:"):
             snap = self.backend.snapshot()
             chan_id = int(item[2:])
@@ -386,7 +389,7 @@ class DGWindow:
         if not self.tree:
             return
         hit = self.tree.identify_row(event.y)
-        if not hit:
+        if not hit or hit in self._spacer_items:
             return
         self.tree.selection_set(hit)
         menu = tk.Menu(self.root, tearoff=False, bg=self.palette["high"], fg=TEXT)
