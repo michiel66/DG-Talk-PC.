@@ -233,31 +233,46 @@ class DGWindow:
             self.label(outer, "Zelfde kanaalstructuur en radio-bediening als DG-Talk Android.",
                        9, color=FAINT, wraplength=390).pack(anchor="w")
             return
-        bar = tk.Frame(self.root, bg=p["bg"])
-        bar.pack(fill="x", padx=16, pady=(10, 9))
-        snap = self.backend.snapshot()
-        title = getattr(snap, "name", self.backend.config["server"]) if snap else self.backend.config["server"]
-        self.label(bar, title, 12, True).pack(side="left")
-        self.label(bar, "● Verbonden", 9, color=p["green"]).pack(side="right")
-        self.label(self.root, "KANALEN EN GEBRUIKERS", 9, True, color=FAINT,
-                   bg=p["bg"]).pack(anchor="w", padx=16, pady=(2, 5))
-        treebox = tk.Frame(self.root, bg=p["bg"])
-        treebox.pack(fill="both", expand=True, padx=9)
-        self.tree = ttk.Treeview(treebox, show="tree", selectmode="browse", style="DG.Treeview")
-        # Distinguish actual TS3 separator channels from ordinary joinable channels.
-        self.tree.tag_configure("spacer_line", foreground=p["accent"], font=self._spacer_font)
-        self.tree.tag_configure("spacer_heading", foreground=p["yellow"], font=self._spacer_font)
-        self.tree.bind("<Configure>", self._schedule_spacer_refresh)
-        sb = ttk.Scrollbar(treebox, orient="vertical", command=self.tree.yview,
-                           style="DG.Vertical.TScrollbar")
-        self.tree.configure(yscrollcommand=sb.set)
-        sb.pack(side="right", fill="y")
-        self.tree.pack(side="left", fill="both", expand=True)
-        self.tree.bind("<Double-1>", self.activate_tree)
-        self.tree.bind("<Return>", self.activate_tree)
-        self.tree.bind("<Button-3>", self.tree_menu)
-        self.populate_tree(snap)
+        self.radio_console = RadioConsole(
+            self.root, self.backend, p, self._photo,
+            on_settings=lambda: self.navigate("settings"),
+            on_chat=lambda: self.navigate("chat"),
+            on_mic=self.toggle_mic, on_speaker=self.toggle_speaker,
+            on_disconnect=self.backend.disconnect,
+            on_ptt_down=lambda: self.backend.ptt_down("screen"),
+            on_ptt_up=lambda: self.backend.ptt_up("screen"),
+            on_join_channel=self.join_radio_channel,
+            on_private_chat=self.open_radio_private,
+            dpi_scale=self.dpi_scale,
+        )
+        self.radio_console.pack(fill="both", expand=True)
+        self.radio_console.set_tx(self.tx)
         self._last_tree = None
+
+    def join_radio_channel(self, channel_id):
+        snap = self.backend.snapshot()
+        if snap is None:
+            return
+        channel = next((c for c in snap.channels if int(c.id) == int(channel_id)), None)
+        if channel is None or parse_spacer(channel.name) is not None:
+            return
+        password = None
+        if channel.has_password:
+            password = simpledialog.askstring(
+                "Kanaalwachtwoord", "Wachtwoord voor " + channel.name,
+                parent=self.root, show="*")
+            if password is None:
+                return
+        try:
+            self.backend.move_channel(int(channel_id), password)
+        except Exception as error:
+            messagebox.showerror("TeamSpeak-kanaal", str(error), parent=self.root)
+
+    def open_radio_private(self, client_id, client_name):
+        self.chat_client_id = int(client_id)
+        self.chat_client_name = client_name
+        self.chat_target = "private"
+        self.navigate("chat")
 
     def entry(self, parent, variable, **kw):
         return tk.Entry(parent, textvariable=variable, bg=self.palette["high"], fg=TEXT,
