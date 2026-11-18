@@ -28,14 +28,18 @@ jobs:
     steps:
       # GitHub permits a trailing dot in the repository name, but the Windows runner
       # sometimes fails to create the corresponding working directory by default.
-      - name: Prepare Windows workspace for repository name ending in a dot
+      - name: Prepare literal trailing-dot Windows workspace for Node and Git
         working-directory: 'C:\Windows\Temp'
         run: |
-          Write-Host "Runner workspace: $env:GITHUB_WORKSPACE"
-          New-Item -ItemType Directory -Path $env:GITHUB_WORKSPACE -Force | Out-Null
-          if (-not (Test-Path $env:GITHUB_WORKSPACE)) {
-            throw "Cannot create Windows working directory for trailing-dot repository name"
-          }
+          $workspace = $env:GITHUB_WORKSPACE
+          $parent = Split-Path -Path $workspace -Parent
+          $prefix = '\\?\' 
+          Write-Host "Workspace = $workspace"
+          New-Item -ItemType Directory -Force -LiteralPath ($prefix + $parent) | Out-Null
+          New-Item -ItemType Directory -Force -LiteralPath ($prefix + $workspace) | Out-Null
+          cmd /c "dir D:\a /a"
+          node -e "let fs=require('fs'); console.log('Node workspace exists',fs.existsSync(process.env.GITHUB_WORKSPACE));"
+          if ($LASTEXITCODE -ne 0) { throw "Node workspace check failed" }
 
       - name: Checkout DG-Talk-PC Windows source
         uses: actions/checkout@v4
