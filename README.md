@@ -4,9 +4,20 @@
 
 > **Status:** eerste native Windows-port. De interface volgt de Android-indeling en bevat thema's en PTT. Dit is **geen pixel-perfecte of functie-voor-functie kopie**: Android-eigen functies en bepaalde apparaatknoppen vragen afzonderlijke Windows-implementaties en praktijktests.
 
+## DG-Talk PC 1.0.1 – gekleurde pictogrammen en bureaubladicoon
+
+Deze update herstelt de twee gemelde Windows-problemen zonder de werkende TeamSpeak-, microfoon- of PTT-functionaliteit te wijzigen:
+
+- De app gebruikt nu **echte, gekleurde RGBA-pictogrammen**, niet langer Windows-emoji die als witte symbolen verschijnen. Dit geldt voor de knoppen, kanaalboom, gebruikersstatus en de speciale thema-iconen van Kerst, 27MC en Space.
+- Het DG-Talk-logo wordt als **Windows-appicoon (.ico)** opgenomen in de EXE, het venster, de taakbalk en de Windows-setup.
+- De **Windows-setup maakt voortaan altijd een bureaubladsnelkoppeling en Startmenu-snelkoppeling** voor het huidige Windows-account. Je hoeft geen optioneel vakje te selecteren.
+- Dezelfde app-id en dezelfde installatiemap blijven behouden: installatie over de vorige versie is mogelijk, met behoud van gebruikersinstellingen in `%LOCALAPPDATA%\DG-Talk-PC\settings.json`.
+
+**Let op:** download de nieuwe **DG-Talk-PC-Setup-Windows-x64** via de geslaagde GitHub Actions-run; de losse portable versie maakt geen bureaubladsnelkoppeling, omdat die niet wordt geïnstalleerd.
+
 ## Downloaden
 
-Open [Actions](https://github.com/michiel66/DG-Talk-PC./actions/workflows/windows.yml), kies een geslaagde **DG-Talk PC Windows EXE**-run en download onder **Artifacts** `DG-Talk-PC-Windows-x64`. Pak de ZIP uit en start `DG-Talk-PC.exe` in de map. **Laat de bestanden uit de map `_internal` staan**, anders start de toepassing niet.
+Open [Actions](https://github.com/michiel66/DG-Talk-PC./actions/workflows/windows.yml), kies de nieuwste geslaagde **DG-Talk PC Windows EXE**-run en download onder **Artifacts** bij voorkeur `DG-Talk-PC-Setup-Windows-x64`. Pak het ZIP-bestand uit en voer `DG-Talk-PC-Setup.exe` uit. De setup zet automatisch het gekleurde DG-Talk-icoon op je bureaublad. Voor portable gebruik is er ook `DG-Talk-PC-Windows-x64`: pak die ZIP uit en start `DG-Talk-PC.exe` in de map. **Laat de bestanden uit de map `_internal` staan**, anders start de toepassing niet.
 
 De app opent als **zelfstandig Windows-venster** met Tkinter: er is geen webbrowser en er is geen lokale webserver. Windows 10/11 x64.
 
