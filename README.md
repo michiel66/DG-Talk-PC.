@@ -4,6 +4,18 @@
 
 > **Status:** eerste native Windows-port. De interface volgt de Android-indeling en bevat thema's en PTT. Dit is **geen pixel-perfecte of functie-voor-functie kopie**: Android-eigen functies en bepaalde apparaatknoppen vragen afzonderlijke Windows-implementaties en praktijktests.
 
+## DG-Talk PC 1.0.2 – zichtbare spacerlijnen en scherpe 4K/HiDPI-weergave
+
+Op verzoek van gebruikers van TS-HEERLEN:
+
+- **Echte TeamSpeak-3-spacers**: regels zoals `[*spacer619]──`, `[*spacer0]___`, `[cspacer0]Welkom`, `[lspacer]` en `[rspacer]` worden nu herkend en **zonder de technische tag** in de kanaalboom weergegeven. Speciale herhaallijnen (doorgetrokken, streepjes, puntjes) vullen de beschikbare breedte. Gestructureerde kopteksten worden links, gecentreerd of rechts uitgelijnd.
+- **Automatische aanpassing**: spacerlijnen worden opnieuw opgemeten wanneer de gebruiker het venster breder of smaller maakt. Een spacer kan niet per ongeluk als spraakkanaal worden geopend.
+- **Scherper op 4K-monitoren**: per-monitor Windows-DPI-awareness (met fallback voor oudere Windows-versies) voorkomt dat Windows het complete 96-DPI venster als een wazige bitmap vergroot. De vensterafmetingen, rijen en de reeds gekleurde RGBA-icoontjes worden naar de native DPI geschaald. Geen aanpassing aan TeamSpeak, PTT, microfoon, instellingen of rogerpiep.
+- **Begrenzing**: dit is resolutie-onafhankelijke scherpe rendering op 4K/1440p/HiDPI-beeldschermen, geen kunstmatig "4K video"-filter. De uiteindelijke scherpte hangt ook af van de ingestelde Windows-beeldschaling en het gebruikte scherm.
+- **Automatische regressietests**: parser, herhaallijnen, centrering en de nieuwe Windows-DPI-module worden bij elke nieuwe EXE-build gecontroleerd.
+
+Installeer de nieuwe **DG-Talk-PC-Setup-Windows-x64** over de bestaande versie. De instellingen in `%LOCALAPPDATA%\\DG-Talk-PC\\settings.json` blijven behouden.
+
 ## DG-Talk PC 1.0.1 – gekleurde pictogrammen en bureaubladicoon
 
 Deze update herstelt de twee gemelde Windows-problemen zonder de werkende TeamSpeak-, microfoon- of PTT-functionaliteit te wijzigen:
