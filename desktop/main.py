@@ -236,6 +236,10 @@ class DGWindow:
         treebox = tk.Frame(self.root, bg=p["bg"])
         treebox.pack(fill="both", expand=True, padx=9)
         self.tree = ttk.Treeview(treebox, show="tree", selectmode="browse", style="DG.Treeview")
+        # Distinguish actual TS3 separator channels from ordinary joinable channels.
+        self.tree.tag_configure("spacer_line", foreground=p["accent"], font=self._spacer_font)
+        self.tree.tag_configure("spacer_heading", foreground=p["yellow"], font=self._spacer_font)
+        self.tree.bind("<Configure>", self._schedule_spacer_refresh)
         sb = ttk.Scrollbar(treebox, orient="vertical", command=self.tree.yview,
                            style="DG.Vertical.TScrollbar")
         self.tree.configure(yscrollcommand=sb.set)
@@ -264,6 +268,7 @@ class DGWindow:
         tree = self.tree
         for item in tree.get_children():
             tree.delete(item)
+        self._spacer_items = {}
         if snap is None:
             tree.insert("", "end", text="Verbinding maken…")
             return
@@ -274,8 +279,23 @@ class DGWindow:
         srv_id = tree.insert("", "end", iid="server", text="  " + snap.name,
                              image=self._photo("server", 22), open=True)
         for ch in channels:
-            # Actual colourful PIL pixels (not monochrome Windows font emoji).
             parent = nodes.get(int(ch.parent_id), srv_id)
+            spacer = parse_spacer(ch.name)
+            if spacer is not None:
+                # Preserve the channel ID/order, but never show raw [*spacerNNN] tags.
+                # Lines and headings are measured again on resize.
+                tag = "spacer_line" if spacer.align == "*" else "spacer_heading"
+                item = tree.insert(parent, "end", iid="c:" + str(ch.id),
+                                   text="", open=False, tags=(tag,))
+                nodes[int(ch.id)] = item
+                depth = 0
+                ancestor = parent
+                while ancestor and ancestor != srv_id:
+                    depth += 1
+                    ancestor = tree.parent(ancestor)
+                self._spacer_items[item] = (spacer, depth)
+                continue
+            # Other TeamSpeak channels retain the original icon/label and order.
             icon_name = "channel_locked" if ch.has_password else (
                 theme_icons[int(ch.id) % len(theme_icons)] if theme_icons else "channel"
             )
@@ -293,6 +313,28 @@ class DGWindow:
             if int(user.channel_id) not in nodes:
                 tree.insert(srv_id, "end", iid="u:" + str(user.id),
                             text="  " + user.name, image=self._photo("user", 20))
+        self._refresh_spacers()
+
+    def _schedule_spacer_refresh(self, event=None):
+        # When the window is resized, extend/re-align spacer lines to the new width.
+        if self._spacer_refresh_job is not None:
+            self.root.after_cancel(self._spacer_refresh_job)
+        self._spacer_refresh_job = self.root.after(90, self._refresh_spacers)
+
+    def _refresh_spacers(self):
+        self._spacer_refresh_job = None
+        tree = self.tree
+        if tree is None or not tree.winfo_exists():
+            return
+        available = tree.winfo_width()
+        for item, (spacer, depth) in self._spacer_items.items():
+            if not tree.exists(item):
+                continue
+            # Indentation, left-side tree toggles and padding reserve real pixels.
+            content_width = max(0, available - round((75 + depth * 24) * self.dpi_scale))
+            new_text = spacer_display(spacer, content_width, self._spacer_font.measure)
+            if tree.item(item, "text") != new_text:
+                tree.item(item, text=new_text)
 
     def refresh_tree(self):
         if self.page == "server" and self.backend.connected and self.tree:
