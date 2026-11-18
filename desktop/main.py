@@ -227,22 +227,29 @@ class DGWindow:
         channels = list(snap.channels)
         users = list(snap.clients)
         nodes = {}
-        symbols = EMOJI.get(self.backend.config["theme"], ())
-        srv_id = tree.insert("", "end", iid="server", text="◈  " + snap.name, open=True)
-        for i, ch in enumerate(channels):
-            # The snapshot already comes in Android's exact TeamSpeak tree order.
+        theme_icons = TREE_ICONS.get(self.backend.config["theme"], ())
+        srv_id = tree.insert("", "end", iid="server", text="  " + snap.name,
+                             image=self._photo("server", 22), open=True)
+        for ch in channels:
+            # Actual colourful PIL pixels (not monochrome Windows font emoji).
             parent = nodes.get(int(ch.parent_id), srv_id)
-            label = symbols[int(ch.id) % len(symbols)] if symbols else ("🔒" if ch.has_password else "◉")
-            text = f"{label}  {ch.name}"
-            item = tree.insert(parent, "end", iid="c:" + str(ch.id), text=text, open=True)
+            icon_name = "channel_locked" if ch.has_password else (
+                theme_icons[int(ch.id) % len(theme_icons)] if theme_icons else "channel"
+            )
+            item = tree.insert(parent, "end", iid="c:" + str(ch.id),
+                               text="  " + ch.name, image=self._photo(icon_name, 20), open=True)
             nodes[int(ch.id)] = item
             for user in (u for u in users if int(u.channel_id) == int(ch.id)):
-                tag = "🔴" if user.input_muted else ("🟢" if user.talking or int(user.id) in self.talkers else "●")
+                role = "user_muted" if user.input_muted else (
+                    "user_talking" if user.talking or int(user.id) in self.talkers else "user"
+                )
                 own = "  [ik]" if int(user.id) == int(snap.own_client_id) else ""
-                tree.insert(item, "end", iid="u:" + str(user.id), text=f"   {tag}  {user.name}{own}")
+                tree.insert(item, "end", iid="u:" + str(user.id),
+                            text=f"  {user.name}{own}", image=self._photo(role, 20))
         for user in users:
             if int(user.channel_id) not in nodes:
-                tree.insert(srv_id, "end", iid="u:" + str(user.id), text="●  " + user.name)
+                tree.insert(srv_id, "end", iid="u:" + str(user.id),
+                            text="  " + user.name, image=self._photo("user", 20))
 
     def refresh_tree(self):
         if self.page == "server" and self.backend.connected and self.tree:
