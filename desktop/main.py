@@ -13,6 +13,7 @@ from tkinter import ttk, messagebox, simpledialog
 from tkinter.scrolledtext import ScrolledText
 
 from backend import Backend, THEMES
+from color_icons import draw_icon
 
 try:
     from PIL import Image, ImageTk
@@ -31,10 +32,10 @@ TEXT = "#E6E8EA"
 FAINT = "#9BA1A6"
 RED = "#F44336"
 NAMES = {"standard": "Standaard", "christmas": "Kerst", "27mc": "27MC", "space": "Space"}
-EMOJI = {
-    "christmas": ("🎄", "🎅", "⛄", "🎁", "❄"),
-    "27mc": ("📻", "📡", "🚛"),
-    "space": ("🪐", "🚀", "🌟", "🛰"),
+TREE_ICONS = {
+    "christmas": ("tree", "snowman", "gift", "snowflake"),
+    "27mc": ("radio", "antenna", "truck"),
+    "space": ("planet", "rocket", "star", "satellite"),
 }
 
 
@@ -46,6 +47,14 @@ class DGWindow:
         self.root.geometry("525x860")
         self.root.minsize(405, 640)
         self.root.configure(bg=PAL["standard"]["bg"])
+        self._icons = {}  # Keep native RGBA PhotoImage references alive
+        self.root.iconphoto(True, self._photo("app", 64))
+        exe_assets = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent)) / "assets"
+        try:
+            if (exe_assets / "DG-Talk-PC.ico").is_file():
+                self.root.iconbitmap(default=str(exe_assets / "DG-Talk-PC.ico"))
+        except tk.TclError:
+            pass
         self.root.protocol("WM_DELETE_WINDOW", self.close)
         self.page = "server"
         self.palette = PAL.get(self.backend.config.get("theme"), PAL["standard"])
@@ -81,13 +90,24 @@ class DGWindow:
         style.configure("DG.TCombobox", fieldbackground=p["high"], foreground=TEXT,
                         background=p["high"], arrowcolor=TEXT)
 
+    def _photo(self, name, size=22):
+        # Real RGBA pixel art. Tk/Windows often turns emoji into white glyphs.
+        key = (name, size, self.backend.config.get("theme", "standard"))
+        if key not in self._icons:
+            colour = PAL.get(self.backend.config.get("theme"), PAL["standard"])["accent"]
+            self._icons[key] = ImageTk.PhotoImage(draw_icon(name, size, colour), master=self.root)
+        return self._icons[key]
+
     def label(self, parent, text, size=10, bold=False, color=None, bg=None, **kw):
         return tk.Label(parent, text=text, bg=bg or parent.cget("bg"),
                         fg=color or TEXT, font=("Segoe UI", size, "bold" if bold else "normal"),
                         anchor="w", **kw)
 
-    def button(self, parent, text, command, color=None, foreground="#FFFFFF", size=10, **kw):
+    def button(self, parent, text, command, color=None, foreground="#FFFFFF",
+               size=10, icon=None, icon_size=23, **kw):
+        picture = self._photo(icon, icon_size) if icon else None
         return tk.Button(parent, text=text, command=command, bg=color or self.palette["high"],
+                         image=picture, compound="left" if text else "center",
                          fg=foreground, activebackground=self.palette["soft"], activeforeground="#FFFFFF",
                          font=("Segoe UI", size, "bold"), relief="flat", borderwidth=0,
                          cursor="hand2", padx=15, pady=10, **kw)
